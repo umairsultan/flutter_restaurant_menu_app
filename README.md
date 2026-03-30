@@ -1,17 +1,37 @@
-# flutter_app_march
+# Tap & Taste App (Flutter)
 
-A new Flutter project.
+A Flutter Fast Food Menu App that provides users with a delightful experience to explore and order their favorite fast food items. With a user-friendly interface and a wide variety of menu options, Tap & Taste allows users to easily browse through different categories of fast food, view detailed descriptions and images of each item, and place orders seamlessly. Whether you're craving a juicy burger, crispy fries, or a refreshing beverage, Tap & Taste has got you covered. The app also offers features like personalized recommendations based on user preferences, real-time order tracking, and secure payment options for a convenient and enjoyable dining experience. Get ready to satisfy your cravings with just a few taps on Tap & Taste!
 
 ## Getting Started
+To get a local copy up and running, follow these simple steps.
 
-This project is a starting point for a Flutter application.
+Prerequisites
+Flutter SDK installed on your machine.
 
-A few resources to get you started if this is your first Flutter project:
+An Android Emulator or physical device for testing.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Installation
+Clone the repository:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Bash
+git clone [https://github.com/YOUR-USERNAME/tap-and-taste.git](https://github.com/umairsultan/tap-and-taste.git)
+Navigate to the project directory:
+
+Bash
+cd tap-and-taste
+Install Flutter packages:
+
+Bash
+flutter pub get
+Run the app in debug mode:
+
+Bash
+flutter run
+📦 Building for Production
+To generate a highly optimized, lightweight APK for deployment on Android devices, run the following command. This splits the app by architecture rather than creating a bloated "fat" APK:
+
+Bash
+flutter build apk --split-per-abi
+You can find the generated release files inside build/app/outputs/flutter-apk/. Use the app-arm64-v8a-release.apk for most modern Android 10+ devices.
+
+Built with ❤️ using Flutter.
