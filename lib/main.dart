@@ -96,7 +96,7 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Our Menu', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Tap & Taste Menu', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       // 4. FutureBuilder handles loading, error, and success states dynamically
