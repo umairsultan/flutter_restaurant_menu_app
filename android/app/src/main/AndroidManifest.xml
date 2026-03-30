@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="Flutter March"
+        android:label="Tap &amp; Taste"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

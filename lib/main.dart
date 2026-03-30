@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const DigitalMenuApp());
@@ -10,7 +12,7 @@ class DigitalMenuApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Fast Food Menu',
+      title: 'Tap & Taste',
       theme: ThemeData(
         primarySwatch: Colors.red,
         scaffoldBackgroundColor: Colors.grey[100],
@@ -21,63 +23,74 @@ class DigitalMenuApp extends StatelessWidget {
         ),
       ),
       home: const MenuScreen(),
-      // Removes the debug banner in the top right
-      debugShowCheckedModeBanner: false, 
+      debugShowCheckedModeBanner: false,
     );
   }
 }
 
-// 1. Define a simple Data Model for our menu items
+// 1. Updated Data Model matching the API's JSON structure
 class MenuItem {
+  final String id;
   final String name;
   final String description;
   final double price;
-  final IconData placeholderIcon;
+  final String imageUrl;
 
-  const MenuItem({
+  MenuItem({
+    required this.id,
     required this.name,
     required this.description,
     required this.price,
-    required this.placeholderIcon,
+    required this.imageUrl,
   });
+
+  // A factory method to convert the API's JSON into a MenuItem object
+  factory MenuItem.fromJson(Map<String, dynamic> json) {
+    return MenuItem(
+      id: json['id'] ?? '',
+      name: json['name'] ?? 'Unknown',
+      description: json['dsc'] ?? '',
+      price: (json['price'] ?? 0).toDouble(),
+      imageUrl: json['img'] ?? '',
+    );
+  }
 }
 
-class MenuScreen extends StatelessWidget {
+class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
 
-  // 2. Hardcode the menu data so it loads instantly in memory
-  static const List<MenuItem> _menuItems = [
-    MenuItem(
-      name: 'Classic Cheeseburger',
-      description: 'Beef patty, cheddar cheese, lettuce, tomato, and house sauce.',
-      price: 5.99,
-      placeholderIcon: Icons.lunch_dining,
-    ),
-    MenuItem(
-      name: 'Spicy Chicken Sandwich',
-      description: 'Crispy fried chicken breast with spicy mayo and pickles.',
-      price: 6.49,
-      placeholderIcon: Icons.fastfood,
-    ),
-    MenuItem(
-      name: 'Large French Fries',
-      description: 'Golden, crispy fries salted to perfection.',
-      price: 2.99,
-      placeholderIcon: Icons.local_pizza, // Placeholder
-    ),
-    MenuItem(
-      name: 'Chocolate Milkshake',
-      description: 'Rich chocolate ice cream blended with whole milk.',
-      price: 3.99,
-      placeholderIcon: Icons.icecream,
-    ),
-    MenuItem(
-      name: 'Fountain Drink',
-      description: 'Choice of cola, diet cola, or lemon-lime soda.',
-      price: 1.99,
-      placeholderIcon: Icons.local_drink,
-    ),
-  ];
+  @override
+  State<MenuScreen> createState() => _MenuScreenState();
+}
+
+class _MenuScreenState extends State<MenuScreen> {
+  // 2. Future variable to hold our data while it loads
+  late Future<List<MenuItem>> _menuFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start fetching data exactly once when the screen loads
+    _menuFuture = fetchMenuItems(); 
+  }
+
+  // 3. The function that actually calls the GitHub API
+  Future<List<MenuItem>> fetchMenuItems() async {
+    // You can change 'burgers' to 'pizzas', 'desserts', 'drinks', etc.
+    final url = Uri.parse('https://free-food-menus-api-two.vercel.app/burgers');
+    
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      // Decode the JSON string into a List of dynamic objects
+      List<dynamic> data = jsonDecode(response.body);
+      
+      // Map the JSON objects into our MenuItem list
+      return data.map((json) => MenuItem.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load menu items');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,68 +99,108 @@ class MenuScreen extends StatelessWidget {
         title: const Text('Our Menu', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
-      // 3. Use ListView.builder for high performance on long lists
-      body: ListView.builder(
-        itemCount: _menuItems.length,
-        padding: const EdgeInsets.all(12.0),
-        itemBuilder: (context, index) {
-          final item = _menuItems[index];
-          return Card(
-            elevation: 2,
-            margin: const EdgeInsets.only(bottom: 12.0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Row(
-                children: [
-                  // Placeholder for your actual food image
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(item.placeholderIcon, size: 40, color: Colors.red),
+      // 4. FutureBuilder handles loading, error, and success states dynamically
+      body: FutureBuilder<List<MenuItem>>(
+        future: _menuFuture,
+        builder: (context, snapshot) {
+          // State A: Still downloading from the internet
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Colors.red));
+          } 
+          // State B: Something went wrong (e.g., no internet connection)
+          else if (snapshot.hasError) {
+            return Center(child: Text('Error loading menu. Check Wi-Fi.'));
+          } 
+          // State C: Connected, but the API returned an empty list
+          else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No menu items found.'));
+          }
+
+          // State D: Success! Build the list.
+          final menuItems = snapshot.data!;
+          
+          return ListView.builder(
+            itemCount: menuItems.length,
+            padding: const EdgeInsets.all(12.0),
+            itemBuilder: (context, index) {
+              final item = menuItems[index];
+              return Card(
+                elevation: 2,
+                margin: const EdgeInsets.only(bottom: 12.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    children: [
+                      // Fetch the image from the URL provided by the API
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          item.imageUrl,
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                          // Shows a tiny loading circle just for the image while it downloads
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: 80, height: 80,
+                              color: Colors.grey[200],
+                              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            );
+                          },
+                          // Shows a broken image icon if the API image link is dead
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 80, height: 80,
+                              color: Colors.red[50],
+                              child: const Icon(Icons.broken_image, color: Colors.red),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Text and Pricing
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.description,
+                              maxLines: 2, // Limits description to 2 lines so UI stays clean
+                              overflow: TextOverflow.ellipsis, 
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '\$${item.price.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  // Text and Pricing
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.description,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '\$${item.price.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.green,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
         },
       ),
